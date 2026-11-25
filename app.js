@@ -226,18 +226,23 @@ byId("bank-category").onchange = renderBank;
 byId("search").oninput = renderBank;
 // 快捷键只在练习区生效，不拦截输入、输入法和浏览器组合键。
 document.addEventListener("keydown", (event) => {
-  if (view === "bank" || event.repeat || event.isComposing || event.ctrlKey || event.metaKey ||
+  if (view === "bank" || event.isComposing || event.ctrlKey || event.metaKey ||
     event.altKey || event.target.closest("input, select, textarea, [contenteditable]")) return;
   const pressed = event.key.toLowerCase();
+  if (pressed === " " && !byId("question").hidden) {
+    event.preventDefault();
+    if (!event.repeat) setAnswer(byId("feedback").hidden);
+    return;
+  }
+  if (event.repeat) return;
   if (pressed === "a" && !byId("result").hidden) {
     event.preventDefault();
     move(-1);
     return;
   }
-  if (byId("question").hidden || !["a", "s", "d", "q", "e"].includes(pressed)) return;
+  if (byId("question").hidden || !["a", "d", "q", "e"].includes(pressed)) return;
   event.preventDefault();
-  if (pressed === "s") setAnswer(byId("feedback").hidden);
-  else if (pressed === "q" || pressed === "e") grade(pressed === "q" ? "right" : "wrong");
+  if (pressed === "q" || pressed === "e") grade(pressed === "q" ? "right" : "wrong");
   else move(pressed === "a" ? -1 : 1);
 });
 text("bank-size", `${categories.length} 类 · ${entries.length} 个词条`);
