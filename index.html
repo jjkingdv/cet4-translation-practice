@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="四级汉译英常考词：按分类刷题、复习错题和查看完整词表。">
   <title>四级翻译词汇刷题</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=dictation1">
   <script defer src="bank.js"></script>
-  <script defer src="app.js"></script>
+  <script defer src="app.js?v=dictation1"></script>
 </head>
 <body>
   <header class="topbar">
@@ -23,9 +23,9 @@
   <main class="frame">
     <!-- 答题和错题复练共用答题卡；词表单独浏览。 -->
     <header class="intro">
-      <p id="eyebrow" class="eyebrow">CET-4 · 汉译英练习</p>
+      <p id="eyebrow" class="eyebrow">CET-4 · 纸笔默写</p>
       <h1 id="title" tabindex="-1">四级翻译词汇刷题</h1>
-      <p id="description">看中文选英文，答错了就回头再练。</p>
+      <p id="description">看中文，在纸上默写英文，写完再翻答案。</p>
     </header>
     <p id="storage-error" class="notice" role="status" hidden>浏览器未能保存错题。本次练习仍可继续，刷新后记录可能丢失。</p>
     <div id="study" class="study-grid">
@@ -47,26 +47,37 @@
         <div id="idle">
           <span class="badge" id="bank-size"></span>
           <h2 id="idle-title">选好分类，开始第一轮</h2>
-          <p id="idle-help">每道题先想一想英文，再看选项。答完马上核对正确译法。</p>
+          <p id="idle-help">每题先在纸上写，核对后可自己标记「写对了」或「还要复习」。</p>
         </div>
         <div id="question" hidden>
           <div class="progress-row"><span id="question-category" class="badge"></span><span id="progress-text"></span></div>
           <progress id="progress" aria-label="练习进度"></progress>
-          <p class="eyebrow question-label">选出最符合中文的英文</p>
+          <p class="eyebrow question-label">中文提示 · 请在纸上写英文</p>
           <h2 id="prompt" tabindex="-1"></h2>
-          <div id="options" class="option-list"></div>
-          <section id="feedback" class="feedback" aria-label="答题反馈" tabindex="-1" hidden>
-            <h3 id="verdict"></h3>
-            <p id="answers"></p>
+          <!-- 先独立默写，再翻答案；翻卡和记录错题是两件事。 -->
+          <div class="card-actions">
+            <button id="previous" type="button" class="secondary" aria-keyshortcuts="A">上一题</button>
+            <button id="flip" type="button" class="primary" aria-keyshortcuts="S" aria-expanded="false" aria-controls="feedback">翻答案</button>
+            <button id="next" type="button" class="secondary" aria-keyshortcuts="D">下一题</button>
+          </div>
+          <p class="key-hint muted"><kbd>A</kbd> 上一题 · <kbd>S</kbd> 翻答案 · <kbd>D</kbd> 下一题</p>
+          <section id="feedback" class="feedback" aria-labelledby="answer-label" hidden>
+            <h3 id="answer-label">讲义译法</h3>
+            <p id="answers" lang="en"></p>
             <p id="answer-page" class="muted"></p>
+            <div class="result-actions grade-actions" role="group" aria-label="默写自评">
+              <button id="mark-right" class="secondary" type="button" aria-pressed="false">写对了</button>
+              <button id="mark-wrong" class="secondary" type="button" aria-pressed="false">还要复习</button>
+            </div>
+            <p id="verdict" class="muted" role="status"></p>
           </section>
-          <button id="next" type="button" class="primary next" hidden>下一题</button>
         </div>
         <div id="result" hidden>
           <span class="badge">本轮结束</span>
           <h2 id="result-title" tabindex="-1"></h2>
           <p id="result-note"></p>
           <div class="result-actions">
+            <button id="back-to-card" type="button" class="secondary" aria-keyshortcuts="A">返回最后一题</button>
             <button id="again" type="button" class="primary">再来一轮</button>
             <button id="retry" type="button" class="secondary">重练本轮错题</button>
           </div>

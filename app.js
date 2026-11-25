@@ -15,26 +15,6 @@ try {
   show("storage-error", true);
 }
 
-// 同义词以及在宽泛中文提示下容易互换的表达，不放在同一道题作干扰项。
-const overlapping = [
-  ["重视", "非常重视"],
-  ["提升/改善/增强", "不断提升", "加强/加大", "发展/研发", "推广/推进/促进", "增长", "稳步增长", "大力发展"],
-  ["制定", "引入/出台", "采取", "实施"],
-  ["暗示/表明", "表达/传达", "代表/象征/体现", "标志着", "意味着"],
-  ["流行/盛行/兴起", "悄然兴起", "受到某人喜爱"],
-  ["扎根于/植根于", "深深扎根于"],
-  ["传承", "传播", "弘扬", "复兴"],
-  ["被视为", "被称为", "被誉为", "因...而闻名", "享有...的盛名"],
-  ["对...提供了有利保障", "对...提供了有利支撑", "使/让"],
-  ["为...注入前所未有的活力", "为...注入新动能"],
-  ["独特的", "特色的", "迷人的", "美丽的", "愉悦的"],
-  ["生态保护", "环境保护", "森林资源保护"],
-  ["中学教育", "职业教育"],
-  ["民间习俗", "当地的民俗文化", "优良传统"],
-  ["东", "东部的"], ["西", "西部的"], ["南", "南部的"], ["北", "北部的"],
-  ["东北", "东北部的"], ["西北", "西北部的"], ["东南", "东南部的"], ["西南", "西南部的"]
-];
-
 function shuffle(items) {
   const ordered = [...items];
   for (let index = ordered.length - 1; index > 0; index--) {
@@ -44,35 +24,12 @@ function shuffle(items) {
   return ordered;
 }
 
-function optionsFor(entry) {
-  const accepted = new Set(entry.answers.map(normalize));
-  const conflicts = new Set(overlapping.filter((group) => group.includes(entry.prompt)).flat());
-  const right = shuffle(entry.answers)[0];
-  const wordCount = right.split(/\s+/).length;
-  const group = entries.filter((item) => item.category === entry.category && item.id !== entry.id &&
-    !conflicts.has(item.prompt) && item.answers.every((answer) => !accepted.has(normalize(answer))));
-  const candidates = shuffle(group).sort((first, second) => {
-    const distance = (item) => Math.abs(item.answers[0].split(/\s+/).length - wordCount);
-    return distance(first) - distance(second);
-  });
-  const choices = [{ answer: right, correct: true }];
-  for (const item of candidates) {
-    const answer = item.answers[0];
-    if (choices.some((choice) => normalize(choice.answer) === normalize(answer))) continue;
-    choices.push({ answer, correct: false });
-    if (choices.length === 4) break;
-  }
-  return shuffle(choices);
-}
-
 const tabs = [...byId("navigation").querySelectorAll("button[data-view]")];
 let view = "practice";
 let studyView = "practice";
 let round = [];
 let position = 0;
-let missed = [];
-let score = 0;
-let answered = false;
+const marks = new Map();
 
 const checks = categories.map((category) => {
   const label = document.createElement("label");
@@ -126,10 +83,10 @@ function openView(name) {
     }
     const review = studyView === "review";
     text("title", review ? "错题复练" : "四级翻译词汇刷题");
-    text("eyebrow", review ? "CET-4 · 查漏补缺" : "CET-4 · 汉译英练习");
-    text("description", review ? "只练答错过的词，答对就自动移出错题。" : "看中文选英文，答错了就回头再练。");
+    text("eyebrow", review ? "CET-4 · 查漏补缺" : "CET-4 · 纸笔默写");
+    text("description", review ? "只练错题。核对之后点「写对了」即可移出错题。" : "看中文，在纸上默写英文，写完再翻答案。");
     text("idle-title", review ? "选个分类，把错题再做一遍" : "选好分类，开始第一轮");
-    text("idle-help", review ? "没有错题时，可以先回到「刷题」做一轮。" : "每道题先想一想英文，再看选项。答完马上核对正确译法。");
+    text("idle-help", review ? "没有错题时，可以先回到「刷题」做一轮。" : "每题先在纸上写，核对后可自己标记「写对了」或「还要复习」。");
     updateSettings();
   }
   byId("title").focus();
@@ -140,9 +97,8 @@ function begin(items = pool()) {
   if (!items.length) return;
   const size = byId("round-size").value;
   round = shuffle(items).slice(0, size === "all" ? items.length : Number(size));
-  missed = [];
+  marks.clear();
   position = 0;
-  score = 0;
   byId("study").classList.add("running");
   show("idle", false);
   show("result", false);
@@ -151,80 +107,82 @@ function begin(items = pool()) {
 }
 
 function renderQuestion() {
-  answered = false;
   const entry = round[position];
   text("question-category", entry.category);
   text("progress-text", `第 ${position + 1} / ${round.length} 题`);
   const bar = byId("progress");
   bar.max = round.length;
-  bar.value = position;
+  bar.value = position + 1;
   text("prompt", entry.prompt);
-  show("feedback", false);
-  show("next", false);
-  const choices = optionsFor(entry).map(({ answer, correct }, index) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "option";
-    const label = document.createElement("b");
-    label.textContent = `${"ABCD"[index]}.`;
-    const word = document.createElement("span");
-    word.lang = "en";
-    word.textContent = answer;
-    button.append(label, word);
-    button.dataset.correct = String(correct);
-    button.addEventListener("click", () => grade(button, correct));
-    return button;
-  });
-  byId("options").replaceChildren(...choices);
+  setAnswer(false);
+  byId("previous").disabled = position === 0;
+  text("next", position === round.length - 1 ? "看本轮结果" : "下一题");
   byId("prompt").focus();
 }
 
-function grade(button, correct) {
-  if (answered) return;
-  answered = true;
+// 翻卡只负责显示答案；只有主动自评才会更改记录。
+function setAnswer(visible) {
   const entry = round[position];
-  if (correct) {
-    score++;
-    wrong.delete(entry.id);
-  } else {
-    missed.push(entry);
-    wrong.add(entry.id);
-  }
+  text("answers", visible ? entry.answers.join(" / ") : "");
+  text("answer-page", visible ? `来源：PDF 第 ${entry.page} 页 · ${entry.category}` : "");
+  if (visible) renderMark(entry);
+  show("feedback", visible);
+  text("flip", visible ? "收起答案" : "翻答案");
+  byId("flip").setAttribute("aria-expanded", String(visible));
+}
+
+function renderMark(entry) {
+  const mark = marks.get(entry.id);
+  byId("mark-right").setAttribute("aria-pressed", String(mark === "right"));
+  byId("mark-wrong").setAttribute("aria-pressed", String(mark === "wrong"));
+  text("verdict", mark === "right" ? "已标记为写对。" : mark === "wrong" ? "已加入错题。" : "");
+}
+
+function grade(mark) {
+  if (byId("question").hidden || byId("feedback").hidden) return;
+  const entry = round[position];
+  marks.set(entry.id, mark);
+  if (mark === "right") wrong.delete(entry.id);
+  else wrong.add(entry.id);
   try {
     localStorage.setItem(key, JSON.stringify([...wrong]));
     show("storage-error", false);
   } catch {
     show("storage-error", true);
   }
-  for (const option of byId("options").children) {
-    option.disabled = true;
-    if (option.dataset.correct === "true") option.classList.add("correct");
-    else if (option === button) option.classList.add("incorrect");
-  }
-  text("verdict", correct ? "答对了" : "答错了，已加入错题");
-  text("answers", `讲义译法：${entry.answers.join(" / ")}`);
-  text("answer-page", `来源：PDF 第 ${entry.page} 页 · ${entry.category}`);
-  text("next", position === round.length - 1 ? "看本轮结果" : "下一题");
-  byId("progress").value = position + 1;
-  show("feedback", true);
-  show("next", true);
-  byId("feedback").focus();
+  renderMark(entry);
   updateSettings();
 }
 
-function advance() {
-  if (!answered) return;
-  if (++position < round.length) {
-    renderQuestion();
-    return;
-  }
+function missedCards() {
+  return round.filter((entry) => marks.get(entry.id) === "wrong");
+}
+
+function finish() {
+  setAnswer(false);
   show("question", false);
   show("result", true);
-  text("result-title", `本轮答对 ${score} / ${round.length} 题`);
-  text("result-note", missed.length ? `本轮答错 ${missed.length} 题，可以立刻重练。` : "本轮没有错题。可以换个分类继续练。");
-  show("retry", missed.length > 0);
+  const missed = missedCards().length;
+  text("result-title", `本轮已自评 ${marks.size} / ${round.length} 题`);
+  text("result-note", `写对 ${marks.size - missed} 题 · 待复习 ${missed} 题 · 未标记 ${round.length - marks.size} 题`);
+  show("retry", missed > 0);
   show("again", pool().length > 0);
   byId("result-title").focus();
+}
+
+function move(step) {
+  if (!byId("result").hidden && step < 0) {
+    show("result", false);
+    show("question", true);
+    renderQuestion();
+  } else if (!byId("question").hidden) {
+    const next = position + step;
+    if (next === round.length) finish();
+    else if (next >= 0 && next < round.length) {
+      position = next;
+      renderQuestion();
+    }
+  }
 }
 
 function renderBank() {
@@ -256,10 +214,30 @@ byId("all-categories").onclick = () => { checks.forEach((input) => { input.check
 byId("no-categories").onclick = () => { checks.forEach((input) => { input.checked = false; }); updateSettings(); };
 byId("settings").addEventListener("change", updateSettings);
 byId("settings").addEventListener("submit", (event) => { event.preventDefault(); begin(); });
-byId("next").onclick = advance;
+byId("flip").onclick = () => setAnswer(byId("feedback").hidden);
+byId("previous").onclick = () => move(-1);
+byId("next").onclick = () => move(1);
+byId("back-to-card").onclick = () => move(-1);
+byId("mark-right").onclick = () => grade("right");
+byId("mark-wrong").onclick = () => grade("wrong");
 byId("again").onclick = () => begin();
-byId("retry").onclick = () => begin(missed);
+byId("retry").onclick = () => begin(missedCards());
 byId("bank-category").onchange = renderBank;
 byId("search").oninput = renderBank;
+// 快捷键只在练习区生效，不拦截输入、输入法和浏览器组合键。
+document.addEventListener("keydown", (event) => {
+  if (view === "bank" || event.repeat || event.isComposing || event.ctrlKey || event.metaKey ||
+    event.altKey || event.target.closest("input, select, textarea, [contenteditable]")) return;
+  const pressed = event.key.toLowerCase();
+  if (pressed === "a" && !byId("result").hidden) {
+    event.preventDefault();
+    move(-1);
+    return;
+  }
+  if (byId("question").hidden || !["a", "s", "d"].includes(pressed)) return;
+  event.preventDefault();
+  if (pressed === "s") setAnswer(byId("feedback").hidden);
+  else move(pressed === "a" ? -1 : 1);
+});
 text("bank-size", `${categories.length} 类 · ${entries.length} 个词条`);
 updateSettings();
