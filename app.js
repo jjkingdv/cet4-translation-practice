@@ -150,8 +150,8 @@ function grade(mark) {
   } catch {
     show("storage-error", true);
   }
-  renderMark(entry);
   updateSettings();
+  move(1);
 }
 
 function missedCards() {
