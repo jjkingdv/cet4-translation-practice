@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="四级汉译英常考词：按分类刷题、复习错题和查看完整词表。">
+  <title>四级翻译词汇刷题</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="bank.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="frame top-inner">
+      <div class="brand"><span aria-hidden="true" class="brand-mark">译</span> 四级翻译刷题</div>
+      <nav aria-label="页面导航" id="navigation">
+        <button type="button" data-view="practice" aria-current="page">刷题</button>
+        <button type="button" data-view="review">错题 <span id="review-count">0</span></button>
+        <button type="button" data-view="bank">词表</button>
+      </nav>
+    </div>
+  </header>
+  <main class="frame">
+    <!-- 答题和错题复练共用答题卡；词表单独浏览。 -->
+    <header class="intro">
+      <p id="eyebrow" class="eyebrow">CET-4 · 汉译英练习</p>
+      <h1 id="title" tabindex="-1">四级翻译词汇刷题</h1>
+      <p id="description">看中文选英文，答错了就回头再练。</p>
+    </header>
+    <p id="storage-error" class="notice" role="status" hidden>浏览器未能保存错题。本次练习仍可继续，刷新后记录可能丢失。</p>
+    <div id="study" class="study-grid">
+      <form id="settings" class="panel setup">
+        <fieldset>
+          <legend id="category-title">练习分类</legend>
+          <p>可多选，选中的分类会混合出题。</p>
+          <div class="select-tools"><button id="all-categories" type="button" class="plain">全选</button><button id="no-categories" type="button" class="plain">清空</button></div>
+          <div id="categories" class="category-list"></div>
+        </fieldset>
+        <div class="round-settings">
+          <label for="round-size">每轮题数</label>
+          <select id="round-size"><option value="10">10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="all">全部</option></select>
+        </div>
+        <button id="start" class="primary" type="submit">开始刷题</button>
+        <p id="settings-note" class="muted" role="status"></p>
+      </form>
+      <section class="panel stage" aria-label="当前练习">
+        <div id="idle">
+          <span class="badge" id="bank-size"></span>
+          <h2 id="idle-title">选好分类，开始第一轮</h2>
+          <p id="idle-help">每道题先想一想英文，再看选项。答完马上核对正确译法。</p>
+        </div>
+        <div id="question" hidden>
+          <div class="progress-row"><span id="question-category" class="badge"></span><span id="progress-text"></span></div>
+          <progress id="progress" aria-label="练习进度"></progress>
+          <p class="eyebrow question-label">选出最符合中文的英文</p>
+          <h2 id="prompt" tabindex="-1"></h2>
+          <div id="options" class="option-list"></div>
+          <section id="feedback" class="feedback" aria-label="答题反馈" tabindex="-1" hidden>
+            <h3 id="verdict"></h3>
+            <p id="answers"></p>
+            <p id="answer-page" class="muted"></p>
+          </section>
+          <button id="next" type="button" class="primary next" hidden>下一题</button>
+        </div>
+        <div id="result" hidden>
+          <span class="badge">本轮结束</span>
+          <h2 id="result-title" tabindex="-1"></h2>
+          <p id="result-note"></p>
+          <div class="result-actions">
+            <button id="again" type="button" class="primary">再来一轮</button>
+            <button id="retry" type="button" class="secondary">重练本轮错题</button>
+          </div>
+        </div>
+      </section>
+    </div>
+    <section id="bank" class="panel bank-panel" aria-label="词汇表" hidden>
+      <div class="bank-controls">
+        <label>分类<select id="bank-category"><option value="">全部分类</option></select></label>
+        <label>搜索词条<input id="search" type="search" placeholder="输入中文或英文"></label>
+      </div>
+      <p id="bank-count" class="muted" role="status"></p>
+      <div id="bank-rows"></div>
+    </section>
+  </main>
+  <footer class="frame">词汇来源：梁伟《四级翻译技巧速通版》PDF 第 12–20 页。<span>错题仅保存在当前浏览器，不会同步到其他设备。</span></footer>
+</body>
+</html>
