@@ -234,9 +234,10 @@ document.addEventListener("keydown", (event) => {
     move(-1);
     return;
   }
-  if (byId("question").hidden || !["a", "s", "d"].includes(pressed)) return;
+  if (byId("question").hidden || !["a", "s", "d", "q", "e"].includes(pressed)) return;
   event.preventDefault();
   if (pressed === "s") setAnswer(byId("feedback").hidden);
+  else if (pressed === "q" || pressed === "e") grade(pressed === "q" ? "right" : "wrong");
   else move(pressed === "a" ? -1 : 1);
 });
 text("bank-size", `${categories.length} 类 · ${entries.length} 个词条`);
