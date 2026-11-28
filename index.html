@@ -7,7 +7,8 @@
   <title>四级翻译词汇刷题</title>
   <link rel="stylesheet" href="style.css?v=dictation1">
   <script defer src="bank.js"></script>
-  <script defer src="app.js?v=dictation4"></script>
+  <script defer src="focus-bank.js?v=photo-focus1"></script>
+  <script defer src="app.js?v=photo-focus1"></script>
 </head>
 <body>
   <header class="topbar">
@@ -15,6 +16,7 @@
       <div class="brand"><span aria-hidden="true" class="brand-mark">译</span> 四级翻译刷题</div>
       <nav aria-label="页面导航" id="navigation">
         <button type="button" data-view="practice" aria-current="page">刷题</button>
+        <button type="button" data-view="focus">图片重点词</button>
         <button type="button" data-view="review">错题 <span id="review-count">0</span></button>
         <button type="button" data-view="bank">词表</button>
       </nav>
@@ -30,12 +32,16 @@
     <p id="storage-error" class="notice" role="status" hidden>浏览器未能保存错题。本次练习仍可继续，刷新后记录可能丢失。</p>
     <div id="study" class="study-grid">
       <form id="settings" class="panel setup">
-        <fieldset>
+        <fieldset id="category-filter">
           <legend id="category-title">练习分类</legend>
           <p>可多选，选中的分类会混合出题。</p>
           <div class="select-tools"><button id="all-categories" type="button" class="plain">全选</button><button id="no-categories" type="button" class="plain">清空</button></div>
           <div id="categories" class="category-list"></div>
         </fieldset>
+        <div id="focus-settings" hidden>
+          <h2>图片重点词</h2>
+          <p class="muted">只练 7 张图里的词，不混入其他词条。</p>
+        </div>
         <div class="round-settings">
           <label for="round-size">每轮题数</label>
           <select id="round-size"><option value="10">10 题</option><option value="20">20 题</option><option value="30">30 题</option><option value="all">全部</option></select>
@@ -65,6 +71,7 @@
             <h3 id="answer-label">讲义译法</h3>
             <p id="answers" lang="en"></p>
             <p id="answer-page" class="muted"></p>
+            <p id="answer-note" class="muted" hidden></p>
             <div class="result-actions grade-actions" role="group" aria-label="默写自评">
               <button id="mark-right" class="secondary" type="button" aria-pressed="false" aria-keyshortcuts="Q">写对了</button>
               <button id="mark-wrong" class="secondary" type="button" aria-pressed="false" aria-keyshortcuts="E">还要复习</button>

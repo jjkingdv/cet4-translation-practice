@@ -6,6 +6,19 @@ const categories = Object.keys(translationBank);
 const entries = Object.entries(translationBank).flatMap(([category, rows]) =>
   rows.map(([prompt, answers, page]) => ({ id: `${category}:${prompt}`, category, prompt, answers, page }))
 );
+const extraEntries = focusExtras.map(([category, prompt, answer]) => ({
+  id: `${category}:${prompt}`, category, prompt, answers: [answer], photo: true, ...focusNotes[`${category}:${prompt}`]
+}));
+const allEntries = [...entries, ...extraEntries];
+const entriesById = new Map(allEntries.map((entry) => [entry.id, entry]));
+const focusIds = new Set(focusGroups.flatMap(([category, words]) =>
+  words.split("|").map((word) => word.includes(":") ? word : `${category}:${word}`)
+));
+const focusEntries = [...focusIds].map((id) => {
+  const entry = entriesById.get(id);
+  const { alternative, ...notes } = focusNotes[id] ?? {};
+  return { ...entry, ...notes, photo: true, answers: alternative ? [...entry.answers, alternative] : entry.answers };
+});
 const key = "cet4-translation-wrong-v1";
 const wrong = new Set();
 try {
@@ -47,17 +60,20 @@ const checks = categories.map((category) => {
 });
 
 function pool() {
+  if (studyView === "focus") return focusEntries;
   const selected = new Set(checks.filter((input) => input.checked).map((input) => input.value));
-  return entries.filter((entry) => selected.has(entry.category) && (studyView !== "review" || wrong.has(entry.id)));
+  const available = studyView === "review" ? allEntries.filter((entry) => wrong.has(entry.id)) : entries;
+  return available.filter((entry) => selected.has(entry.category));
 }
 
 function updateSettings() {
   const amount = pool().length;
   const review = studyView === "review";
-  text("review-count", entries.filter((entry) => wrong.has(entry.id)).length);
+  const focus = studyView === "focus";
+  text("review-count", allEntries.filter((entry) => wrong.has(entry.id)).length);
   text("settings-note", amount ? `当前可练 ${amount} 个词条。` : review ? "选中的分类没有待复习的错题。" : "请至少选择一个分类。");
   byId("start").disabled = amount === 0;
-  text("start", review ? "开始复练" : "开始刷题");
+  text("start", focus ? "开始重点默写" : review ? "开始复练" : "开始刷题");
 }
 
 function openView(name) {
@@ -82,10 +98,14 @@ function openView(name) {
       byId("study").classList.remove("running");
     }
     const review = studyView === "review";
-    text("title", review ? "错题复练" : "四级翻译词汇刷题");
+    const focus = studyView === "focus";
+    show("category-filter", !focus);
+    show("focus-settings", focus);
+    text("bank-size", focus ? `${focusEntries.length} 个图片重点词` : `${categories.length} 类 · ${entries.length} 个词条`);
+    text("title", focus ? "图片重点词" : review ? "错题复练" : "四级翻译词汇刷题");
     text("eyebrow", review ? "CET-4 · 查漏补缺" : "CET-4 · 纸笔默写");
     text("description", review ? "只练错题。核对之后点「写对了」即可移出错题。" : "看中文，在纸上默写英文，写完再翻答案。");
-    text("idle-title", review ? "选个分类，把错题再做一遍" : "选好分类，开始第一轮");
+    text("idle-title", focus ? "先把这组词背熟" : review ? "选个分类，把错题再做一遍" : "选好分类，开始第一轮");
     text("idle-help", review ? "没有错题时，可以先回到「刷题」做一轮。" : "每题先在纸上写，核对后可自己标记「写对了」或「还要复习」。");
     updateSettings();
   }
@@ -124,7 +144,11 @@ function renderQuestion() {
 function setAnswer(visible) {
   const entry = round[position];
   text("answers", visible ? entry.answers.join(" / ") : "");
-  text("answer-page", visible ? `来源：PDF 第 ${entry.page} 页 · ${entry.category}` : "");
+  text("answer-label", entry.photo ? "参考译法" : "讲义译法");
+  const source = entry.page ? `PDF 第 ${entry.page} 页` : "";
+  text("answer-page", visible ? `来源：${entry.photo ? ["图片重点词", source].filter(Boolean).join(" / ") : source} · ${entry.category}` : "");
+  text("answer-note", visible ? entry.note ?? "" : "");
+  show("answer-note", visible && Boolean(entry.note));
   if (visible) renderMark(entry);
   show("feedback", visible);
   text("flip", visible ? "收起答案" : "翻答案");
